@@ -1,11 +1,12 @@
 #include "Kellegous_TempGrad.h"
 
-#define KELLEGOUS_TEMPGRAD_MOCK_TEMPS
-
 Kellegous_TempGrad::Kellegous_TempGrad(uint8_t pin, uint8_t cap)
     : pin_(pin), cap_(cap), len_(0), idx_(0), lst_(1024.0), samples_(0) {
   samples_ = (float*)malloc(sizeof(uint8_t) * cap);
   memset(samples_, 0, sizeof(float) * cap);
+#ifdef KELLEGOUS_TEMPGRAD_MOCK_TEMPS
+  mck_ = 0;
+#endif
 }
 
 Kellegous_TempGrad::~Kellegous_TempGrad() {
@@ -21,9 +22,13 @@ float Kellegous_TempGrad::GetTempFromVolt(uint16_t v) {
 
 uint16_t Kellegous_TempGrad::Read() {
 #ifdef KELLEGOUS_TEMPGRAD_MOCK_TEMPS
-  return 133;
+  uint8_t buf[2];
+  if (Serial.available() >= 2 && Serial.readBytes((char*)buf, 2) == 2) {
+    mck_ = buf[0]<<8 | buf[1];
+  }
+  
+  return mck_;
 #else
-  Serial.println("plain ole read");
   return analogRead(pin_);
 #endif
 }

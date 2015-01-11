@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -91,6 +92,52 @@ func Monitor(p *Port, cfg *serial.Config) {
 	}
 }
 
+func badRequest(w http.ResponseWriter) {
+	http.Error(w,
+		http.StatusText(http.StatusBadRequest),
+		http.StatusBadRequest)
+}
+
+func handleSetTemperature(w http.ResponseWriter, r *http.Request, p *Port) {
+	ts := r.FormValue("value")
+	if ts == "" {
+		badRequest(w)
+		return
+	}
+
+	t, err := strconv.ParseUint(ts, 10, 64)
+	if err != nil {
+		badRequest(w)
+		return
+	}
+
+	if t > 1023 {
+		badRequest(w)
+		return
+	}
+
+	b := []byte{
+		byte(t >> 8),
+		byte(t),
+	}
+
+	if _, err := p.Write(b); err != nil {
+		http.Error(w,
+			http.StatusText(http.StatusInternalServerError),
+			http.StatusInternalServerError)
+	}
+}
+
+func handleServerRequest(w http.ResponseWriter, r *http.Request, p *Port) {
+	cmd := r.FormValue("command")
+	switch cmd {
+	case "set-temp":
+		handleSetTemperature(w, r, p)
+	default:
+		badRequest(w)
+	}
+}
+
 func commandServer(f *flag.FlagSet, args []string) {
 	flagDevc := f.String("device", "", "")
 	flagAddr := f.String("addr", ":6077", "")
@@ -111,11 +158,10 @@ func commandServer(f *flag.FlagSet, args []string) {
 	var port Port
 	go Monitor(&port, &cfg)
 
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("client connected.")
-	})
-
-	if err := http.ListenAndServe(*flagAddr, h); err != nil {
+	if err := http.ListenAndServe(*flagAddr, http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			handleServerRequest(w, r, &port)
+		})); err != nil {
 		log.Panic(err)
 	}
 }

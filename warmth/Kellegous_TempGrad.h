@@ -1,6 +1,8 @@
 #ifndef KELLEGOUS_TEMPGRAD_H_
 #define KELLEGOUS_TEMPGRAD_H_
 
+#define KELLEGOUS_TEMPGRAD_MOCK_TEMPS
+
 #include <inttypes.h>
 #if ARDUINO >= 100
 #include "Arduino.h"
@@ -27,6 +29,9 @@ class Kellegous_TempGrad {
   uint8_t idx_;
   float lst_;
   float* samples_;
+#ifdef KELLEGOUS_TEMPGRAD_MOCK_TEMPS
+  uint16_t mck_;
+#endif
 };
 
 #endif //KELLEGOUS_TEMPGRAD_H_
