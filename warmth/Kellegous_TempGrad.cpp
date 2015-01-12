@@ -5,7 +5,7 @@ Kellegous_TempGrad::Kellegous_TempGrad(uint8_t pin, uint8_t cap)
   samples_ = (float*)malloc(sizeof(uint8_t) * cap);
   memset(samples_, 0, sizeof(float) * cap);
 #ifdef KELLEGOUS_TEMPGRAD_MOCK_TEMPS
-  mck_ = 0;
+  mck_ = 147; // about 71 degrees
 #endif
 }
 
